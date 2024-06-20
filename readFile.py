@@ -5,15 +5,12 @@ def getData(connection, **kwargs):
     tableName = kwargs.get('tableName')
     query = kwargs.get('query')
 
-    print(tableName, query)
-
     if not tableName and not query:
         raise ValueError('tableName or query must be provided')
     
     if tableName:
         query = f'SELECT * FROM "{tableName}"'
     data = pd.read_sql(query, connection)
-    print(data)
     return data
 
 def connectDB(filePath):
