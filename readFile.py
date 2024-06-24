@@ -13,8 +13,9 @@ def getData(connection, **kwargs):
     data = pd.read_sql(query, connection)
     return data
 
-def connectDB(filePath):
-    conn = sqlite3.connect(':memory:')
+def connectDB(filePath, conn=None):
+    if conn is None:
+        conn = sqlite3.connect(':memory:')
     xls = pd.ExcelFile(filePath)
     for sheet in xls.sheet_names:
         df = pd.read_excel(filePath, sheet_name=sheet, header=1).iloc[1:]

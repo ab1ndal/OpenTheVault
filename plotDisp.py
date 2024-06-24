@@ -41,9 +41,6 @@ def plotDispEnv(connection, saveLocation, **kwargs):
     query = "Select GroupName, dispData.Joint, OutputCase, Z, UX, UY FROM dispData INNER JOIN selectedJoint ON dispData.Joint = selectedJoint.ObjectLabel INNER JOIN heightData ON dispData.Joint = heightData.Joint"
     dispData = ps.sqldf(query, locals())
     print(dispData.head(1))
-
-    # join with height data to get height of the joints
-    ## TODO: Add the height data to the database
     
     # plot the data, plot UX and UY in a 1X2 plot, the x axis is the value, the y axis is the height.
     # Case Name should be in the legend of the plot by color
