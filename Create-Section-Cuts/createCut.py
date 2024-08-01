@@ -3,7 +3,18 @@ import numpy as np
 import pandas as pd
 
 class CreateCut:
-    def __init__(self, cutName='', diagCoord=[], cutDirection='Z', cutStep=0, startCoord=0, endCoord=0, groupName = 'ALL', unit='m', vec1=0, vec2=0):
+    def __init__(self, cutName='', diagCoord=[], cutDirection='Z', 
+                 cutStep=0, startCoord=0, endCoord=0, groupName = 'ALL', 
+                 unit='m', vec1='', vec2='', advAxisExists=False, localPlane='31', 
+                 is4Pt=False, **kwargs):
+        if 'addSpecialCoord' in kwargs.keys():
+            self.addSpecialCoord = kwargs.get('addSpecialCoord')
+        else:
+            self.addSpecialCoord = []
+        if 'rmSpecialCoord' in kwargs.keys():
+            self.rmSpecialCoord = kwargs.get('rmSpecialCoord')
+        else:
+            self.rmSpecialCoord = []
         self.cutName = cutName
         self.diagCoord = diagCoord
         self.cutDirection = cutDirection
@@ -14,6 +25,9 @@ class CreateCut:
         self.unit = unit
         self.vec1 = vec1
         self.vec2 = vec2
+        self.advAxisExists = advAxisExists
+        self.is4Pt = is4Pt
+        self.localPlane = localPlane
         self.quad = pd.DataFrame(columns=['SectionCut', 'X', 'Y', 'Z'])
         self.general = pd.DataFrame(columns=['CutName', 'DefinedBy', 'Group', 'ResultType', 'DefaultLoc', 'GlobalX','GlobalY', 'GlobalZ', 'AngleA', 'AngleB', 'AngleC', 'DesignType', 'DesignAngle', 'ElemSide'])
         self.advAxis = pd.DataFrame(columns=['SectionCut', 'LocalPlane', 'AxOption1', 'AxCoordSys', 'AxCoordDir', 'AxVecJt1', 'AxVecJt2', 'PlOption1', 'PlCoordSys', 'CoordDir1', 'CoordDir2', 'PlVecJt2', 'PlVecJt2', 'AxVecX', 'AxVecY', 'AxVecZ', 'PlVecX', 'PlVecY', 'PlVecZ'])
@@ -40,19 +54,19 @@ class CreateCut:
             self.cutDirection = input('Enter the cut direction (X, Y, Z): ')
     
     def inputCutStep(self, **kwargs):
-        if kwargs.get('cutStep'):
+        if 'cutStep' in kwargs.keys():
             self.cutStep = kwargs.get('cutStep')
         else:
             self.cutStep = float(input('Enter the cut step: '))
     
     def inputStartCoord(self, **kwargs):
-        if kwargs.get('startCoord'):
+        if 'startCoord' in kwargs.keys():
             self.startCoord = kwargs.get('startCoord')
         else:
             self.startCoord = float(input('Enter the start coordinate of the normal: '))
     
     def inputEndCoord(self, **kwargs):
-        if kwargs.get('endCoord'):
+        if 'endCoord' in kwargs.keys():
             self.endCoord = kwargs.get('endCoord')
         else:
             self.endCoord = float(input('Enter the end coordinate of the normal: '))
@@ -70,53 +84,109 @@ class CreateCut:
             self.unit = input('Enter the unit of the coordinates: ')
     
     def inputVec1(self, **kwargs):
-        if kwargs.get('vec1'):
-            self.vec1 = kwargs.get('vec1')
-        else:
-            self.vec1 = input('Enter the first Plane Vector Joint: ')
+        if self.advAxisExists:
+            if 'vec1' in kwargs.keys():
+                self.vec1 = kwargs.get('vec1')
+            else:
+                self.vec1 = input('Enter the first Plane Vector Joint: ')
     
     def inputVec2(self, **kwargs):
-        if kwargs.get('vec2'):
-            self.vec2 = kwargs.get('vec2')
-        else:
-            self.vec2 = input('Enter the second Plane Vector Joint: ')
-
+        if self.advAxisExists:
+            if 'vec2' in kwargs.keys():
+                self.vec2 = kwargs.get('vec2')
+            else:
+                self.vec2 = input('Enter the second Plane Vector Joint: ')
     
+    def inputLocalPlane(self, **kwargs):
+        if self.advAxisExists:
+            if kwargs.get('localPlane'):
+                self.localPlane = kwargs.get('localPlane')
+            else:
+                self.localPlane = input('Enter the local plane: ')
+        
+    def inputAdvAxis(self, **kwargs):
+        if 'advAxisExists' in kwargs.keys():
+            self.advAxisExists = kwargs.get('advAxisExists')
+        else:
+            self.advAxisExists = input('Enter the advanced axis: ')
+
+    def inputIs4Pt(self, **kwargs):
+        if 'is4Pt' in kwargs.keys():
+            self.is4Pt = kwargs.get('is4Pt')
+        else:
+            self.is4Pt = input('Enter if the cut is a 4 point cut: ')
+    
+    def input4PtCoord(self, **kwargs):
+        self.quadCoord = []
+        for param in kwargs.keys():
+            self.quadCoord.append(kwargs.get(param))
+        if not self.quadCoord:
+            self.quadCoord = [float(x) for x in input('Enter the coordinates of the 4 points: ').split()]
+
+    def inputSpecialCoord(self, **kwargs):
+        if 'addSpecialCoord' in kwargs.keys():
+            self.addSpecialCoord = kwargs.get('addSpecialCoord')
+        else:
+            self.addSpecialCoord = [float(x) for x in input('Enter the special coordinates to add: ').split()]
+        if 'rmSpecialCoord' in kwargs.keys():
+            self.rmSpecialCoord = kwargs.get('rmSpecialCoord')
+        else:
+            self.rmSpecialCoord = [float(x) for x in input('Enter the special coordinates to remove: ').split()]
+    
+    def checkQuadCoord(self):
+        if len(self.quadCoord) != 8:
+            raise ValueError('Please enter 8 coordinates for the 4 points')
+        # Check if 4 points create a quadrilateral
+        # The points should be in cyclic order
+
+        return True
+    
+    def addQuadCoord(self, direction='Z', cutName = '', constCoord=0, coordList = [0,0]):
+        if direction == 'Z':
+            self.quad.loc[len(self.quad)] = [cutName, coordList[0], coordList[1], constCoord]
+        if direction == 'Y':
+            self.quad.loc[len(self.quad)] = [cutName, coordList[0], constCoord, coordList[1]]
+        if direction == 'X':
+            self.quad.loc[len(self.quad)] = [cutName, constCoord, coordList[0], coordList[1]]
+
+    def define4PtCut(self, direction, cutName, constCoord, coordList):
+        self.addQuadCoord(direction, cutName, constCoord, coordList[0:2])
+        self.addQuadCoord(direction, cutName, constCoord, coordList[2:4])
+        self.addQuadCoord(direction, cutName, constCoord, coordList[4:6])
+        self.addQuadCoord(direction, cutName, constCoord, coordList[6:8])
+    
+    def define2PtCut(self, direction, cutName, constCoord, coordList):
+        self.addQuadCoord(direction, cutName, constCoord, [coordList[0], coordList[1]])
+        self.addQuadCoord(direction, cutName, constCoord, [coordList[0], coordList[3]])
+        self.addQuadCoord(direction, cutName, constCoord, [coordList[2], coordList[3]])
+        self.addQuadCoord(direction, cutName, constCoord, [coordList[2], coordList[1]])
+
+
+
     def defineCut(self):
         # create a list of cuts from the start to the end with the cut step include both start and end
-        cutList = list(np.arange(self.startCoord, self.endCoord, self.cutStep))
-        cutList = [round(x, 3) for x in cutList]
+        cutList = []
+        if round(self.cutStep,3) != 0:
+            cutList = list(np.arange(self.startCoord, self.endCoord, self.cutStep))
+            cutList = [round(x, 3) for x in cutList]
         cutList.append(self.endCoord)
-        
-        # create a list of cuts in the cut direction
-        # The diagonal coordinates are the coordinates of the rectangle diagonal.
-        # For each cut, create 4 entries in dataframe with the coordinates of the rectangle vertices
-        # The rectangle vertices are defined as follows:
-        # For a cut in the Z direction, the vertices are defined as follows: (x1, y1, z1), (x2, y1, z1), (x1, y2, z1), (x1, y1, z1)
-        # For a cut in the Y direction, the vertices are defined as follows: (x1, y1, z1), (x1, y1, z2), (x2, y1, z1), (x2, y1, z2)
-        # For a cut in the X direction, the vertices are defined as follows: (x1, y1, z1), (x1, y2, z1), (x1, y1, z2), (x1, y2, z2)
-        
-             
 
+        # Add the special coordinates to the cut list
+        for c in self.addSpecialCoord:
+            cutList.append(c)
+        for c in self.rmSpecialCoord:
+            if c in cutList:
+                cutList.remove(c)
+        
         for c in cutList:
             cutNameInList = f'{self.cutName} - {self.cutDirection}={c}{self.unit}'
-            if self.cutDirection == 'Z':
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[0], self.diagCoord[1], c]
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[0], self.diagCoord[3], c]
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[2], self.diagCoord[1], c]
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[2], self.diagCoord[3], c]
-            elif self.cutDirection == 'Y':
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[0], c, self.diagCoord[1]]
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[0], c, self.diagCoord[3]]
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[2], c, self.diagCoord[1]]
-                self.quad.loc[len(self.quad)] = [cutNameInList, self.diagCoord[2], c, self.diagCoord[3]]
-            elif self.cutDirection == 'X':
-                self.quad.loc[len(self.quad)] = [cutNameInList, c, self.diagCoord[0], self.diagCoord[1]]
-                self.quad.loc[len(self.quad)] = [cutNameInList, c, self.diagCoord[0], self.diagCoord[3]]
-                self.quad.loc[len(self.quad)] = [cutNameInList, c, self.diagCoord[2], self.diagCoord[1]]
-                self.quad.loc[len(self.quad)] = [cutNameInList, c, self.diagCoord[2], self.diagCoord[3]]
+            if self.is4Pt:
+                self.define4PtCut(self.cutDirection, cutNameInList, c, self.quadCoord)
+            else:
+                self.define2PtCut(self.cutDirection, cutNameInList, c, self.diagCoord)
             self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 'Yes',0,0,0,0,0,0,'', '', 'Positive']
-            self.advAxis.loc[len(self.advAxis)] = [cutNameInList,'31', 'Coord Dir', 'GLOBAL', 'Z', 'None', 'None', 'Two Joints', 'GLOBAL', 'X', 'Y', self.vec1, self.vec2, 0, 0, 1, 1, 0, 0]
+            if self.advAxisExists:
+                self.advAxis.loc[len(self.advAxis)] = [cutNameInList, ''.join(self.localPlane.split('-')), 'Coord Dir', 'GLOBAL', 'Z', 'None', 'None', 'Two Joints', 'GLOBAL', 'X', 'Y', self.vec1, self.vec2, 0, 0, 1, 1, 0, 0]
     
     def printExcel(self, fileLoc=''):
 
