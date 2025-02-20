@@ -3,18 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from createCut import CreateCut
 
-fileLocation = r"C:\\Users\\abindal\\OneDrive - Nabih Youssef & Associates\\Documents\\00_Projects\\06_The Vault\\20240715 Models\\205 Static\\cutDefinition.xlsx"
-spacing = 2
-sheetName = 'S205'
+fileLocation = r"C:\\Users\\abindal\\OneDrive - Nabih Youssef & Associates\\Documents\\00_Projects\\06_The Vault\\Processing-Scripts\\OpenTheVault\\Create-Section-Cuts\\gridlineCutDefinition.xlsx"
+spacing = 1
+sheetName = '302'
 groupName = 'All'
 cutSuffix = 'All'
 #addSpecialCoord = [-0.95, -10.2]
 #rmSpecialCoord = [-1, -10]
-addSpecialCoord = [21.04,12.24,-0.96,-10.17,-22.96,-32.17]
-rmSpecialCoord =  [21,   12,   -1,   -10,   -23,   -32]
+addSpecialCoord = []
+rmSpecialCoord =  []
 GridList = []
 
-outFileLoc = r'C:\\Users\\abindal\\OneDrive - Nabih Youssef & Associates\\Documents\\00_Projects\\06_The Vault\\20240715 Models\\205 Static\\'
+outFileLoc = r'C:\\Users\\abindal\\OneDrive - Nabih Youssef & Associates\\Documents\\00_Projects\\06_The Vault\\Processing-Scripts\\OpenTheVault\\Create-Section-Cuts\\'
 
 
 df = pd.read_excel(fileLocation, sheet_name=sheetName, header=0)
@@ -55,8 +55,8 @@ plt.tight_layout()
 plt.savefig(outFileLoc+'cutDefinition.png', dpi=300)
 
 # Create a new instance of CreateCut
-cut = CreateCut(cutDirection='Z', cutStep=1.0, startCoord=-63.0, endCoord=30,
-                groupName=groupName, unit='m', advAxisExists=True, localPlane='31',
+cut = CreateCut(cutDirection='Z', cutStep=1.0, startCoord=-24.0, endCoord=126.0,
+                groupName=groupName, unit='m', advAxisExists=True, localPlane='32',
                 is4Pt=True, addSpecialCoord=addSpecialCoord, rmSpecialCoord=rmSpecialCoord)
 if not GridList:
     GridList = df['Gridlines'].unique()
@@ -75,6 +75,9 @@ for index, row in df.iterrows():
                         r3y=row['R3y'],
                         r4x=row['R4x'],
                         r4y=row['R4y'])
+        cut.inputIsCustom(isCustom=False)
+        cut.inputPlaneShift(planeShift=False)
+        cut.inputFileName(fileName='gridlineCuts.xlsx')
         cut.defineCut()
 cut.printExcel(fileLoc=outFileLoc)
 

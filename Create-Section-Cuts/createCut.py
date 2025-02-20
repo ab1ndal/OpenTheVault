@@ -33,7 +33,8 @@ class CreateCut:
         self.advAxis = pd.DataFrame(columns=['SectionCut', 'LocalPlane', 'AxOption1', 'AxCoordSys', 'AxCoordDir', 'AxVecJt1', 'AxVecJt2', 'PlOption1', 'PlCoordSys', 'CoordDir1', 'CoordDir2', 'PlVecJt2', 'PlVecJt2', 'AxVecX', 'AxVecY', 'AxVecZ', 'PlVecX', 'PlVecY', 'PlVecZ'])
         self.quad.loc[len(self.quad)] = ['',self.unit, self.unit, self.unit]
         self.general.loc[len(self.general)] = ['','','','','',self.unit, self.unit, self.unit, 'Degrees', 'Degrees', 'Degrees', '', 'Degrees', '']
-        self.advAxis.loc[len(self.advAxis)] = 19*['']  
+        self.advAxis.loc[len(self.advAxis)] = 19*['']
+        self.fileName = 'cuts.xlsx'
     
     def inputCutName(self, **kwargs):
         if kwargs.get('cutName'):
@@ -41,17 +42,35 @@ class CreateCut:
         else:
             self.cutName = input('Enter the name of the cut: ')
     
+    def inputFileName(self, **kwargs):
+        if kwargs.get('fileName'):
+            self.fileName = kwargs.get('fileName')
+        else:
+            self.fileName = input('Enter the name of the file: ')
+    
     def inputDiagCoord(self, **kwargs):
         if kwargs.get('diagCoord'):
             self.diagCoord = kwargs.get('diagCoord')
         else:
             self.diagCoord = [float(x) for x in input('Enter the diagonal coordinates of the cut: ').split()]
     
+    def inputEdgeCoord(self, **kwargs):
+        if kwargs.get('edgeCoord'):
+            self.edgeCoord = kwargs.get('edgeCoord')
+        else:
+            self.edgeCoord = [float(x) for x in input('Enter the edge coordinates of the cut: ').split()]
+
     def inputCutDirection(self, **kwargs):
         if kwargs.get('cutDirection'):
             self.cutDirection = kwargs.get('cutDirection')
         else:
             self.cutDirection = input('Enter the cut direction (X, Y, Z): ')
+
+    def inputPlaneShiftValue(self, **kwargs):
+        if 'planeShiftValue' in kwargs.keys():
+            self.planeShiftValue = kwargs.get('planeShiftValue')
+        else:
+            self.planeShiftValue = float(input('Enter the plane shift value: '))
     
     def inputCutStep(self, **kwargs):
         if 'cutStep' in kwargs.keys():
@@ -59,6 +78,24 @@ class CreateCut:
         else:
             self.cutStep = float(input('Enter the cut step: '))
     
+    def inputPlaneShift(self, **kwargs):
+        if 'planeShift' in kwargs.keys():
+            self.planeShift = kwargs.get('planeShift')
+        else:
+            self.planeShift = bool(input('Should the cut plane be shifted? (True/False): '))
+    
+    def inputCutDistance(self, **kwargs):
+        if 'cutDelta' in kwargs.keys():
+            self.cutDelta = kwargs.get('cutDelta')
+        else:
+            self.cutDelta = float(input('Enter the height from the plane where the cut should extend: '))
+
+    def inputCutHeight(self, **kwargs):
+        if 'cutH' in kwargs.keys():
+            self.cutH = kwargs.get('cutH')
+        else:
+            self.cutH = float(input('Enter the height of the cut plane: '))
+
     def inputStartCoord(self, **kwargs):
         if 'startCoord' in kwargs.keys():
             self.startCoord = kwargs.get('startCoord')
@@ -116,6 +153,12 @@ class CreateCut:
         else:
             self.is4Pt = input('Enter if the cut is a 4 point cut: ')
     
+    def inputIsCustom(self, **kwargs):
+        if 'isCustom' in kwargs.keys():
+            self.isCustom = kwargs.get('isCustom')
+        else:
+            self.isCustom = input('Enter if the cut is a 4 point cut: ')
+    
     def input4PtCoord(self, **kwargs):
         self.quadCoord = []
         for param in kwargs.keys():
@@ -149,6 +192,26 @@ class CreateCut:
         if direction == 'X':
             self.quad.loc[len(self.quad)] = [cutName, constCoord, coordList[0], coordList[1]]
 
+    def defineCustomQuad(self, cutName, gridStart, gridEnd, z, delta=2):
+        if not self.planeShift:
+            d = 0
+        else:
+            d = self.planeShiftValue
+        dx, dy = np.subtract(gridEnd, gridStart)
+        length = np.hypot(dx, dy)
+
+        if length == 0:
+            raise ValueError('The length of the grid is 0')
+        
+        normal = d*np.array([-dy, dx])/length
+        gridStart = np.add(gridStart, normal).tolist()
+        gridEnd = np.add(gridEnd, normal).tolist()
+
+        self.addQuadCoord('Z', cutName, z+delta, gridStart)
+        self.addQuadCoord('Z', cutName, z+delta, gridEnd)
+        self.addQuadCoord('Z', cutName, z-delta, gridEnd)
+        self.addQuadCoord('Z', cutName, z-delta, gridStart)
+
     def define4PtCut(self, direction, cutName, constCoord, coordList):
         self.addQuadCoord(direction, cutName, constCoord, coordList[0:2])
         self.addQuadCoord(direction, cutName, constCoord, coordList[2:4])
@@ -166,31 +229,40 @@ class CreateCut:
     def defineCut(self):
         # create a list of cuts from the start to the end with the cut step include both start and end
         cutList = []
-        if round(self.cutStep,3) != 0:
-            cutList = list(np.arange(self.startCoord, self.endCoord, self.cutStep))
-            cutList = [round(x, 3) for x in cutList]
-        cutList.append(self.endCoord)
+        if not self.isCustom:
+            if round(self.cutStep,3) != 0:
+                cutList = list(np.arange(self.startCoord, self.endCoord, self.cutStep))
+                cutList = [round(x, 3) for x in cutList]
+            cutList.append(self.endCoord)
 
-        # Add the special coordinates to the cut list
-        for c in self.addSpecialCoord:
-            cutList.append(c)
-        for c in self.rmSpecialCoord:
-            if c in cutList:
-                cutList.remove(c)
+            # Add the special coordinates to the cut list
+            for c in self.addSpecialCoord:
+                cutList.append(c)
+            for c in self.rmSpecialCoord:
+                if c in cutList:
+                    cutList.remove(c)
+        else:
+            cutList = [self.cutH]
         
         for c in cutList:
             cutNameInList = f'{self.cutName} - {self.cutDirection}={c}{self.unit}'
             if self.is4Pt:
                 self.define4PtCut(self.cutDirection, cutNameInList, c, self.quadCoord)
-            else:
+            elif not self.isCustom:
                 self.define2PtCut(self.cutDirection, cutNameInList, c, self.diagCoord)
+            else:
+                cutNameInList = f'{self.cutName}'
+                self.defineCustomQuad(cutName=cutNameInList, 
+                                      gridStart = self.edgeCoord[0:2], 
+                                      gridEnd = self.edgeCoord[2:4], 
+                                      z = self.cutH, 
+                                      delta = self.cutDelta)
             self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 'Yes',0,0,0,0,0,0,'', '', 'Positive']
             if self.advAxisExists:
                 self.advAxis.loc[len(self.advAxis)] = [cutNameInList, ''.join(self.localPlane.split('-')), 'Coord Dir', 'GLOBAL', 'Z', 'None', 'None', 'Two Joints', 'GLOBAL', 'X', 'Y', self.vec1, self.vec2, 0, 0, 1, 1, 0, 0]
     
     def printExcel(self, fileLoc=''):
-
-        with pd.ExcelWriter(fileLoc + '\\cuts.xlsx') as writer:
+        with pd.ExcelWriter(fileLoc + f'\\{self.fileName}') as writer:
             self.general.to_excel(writer, index=False, sheet_name='Section Cuts 1 - General')
             self.advAxis.to_excel(writer, index=False, sheet_name='Section Cuts 2 - Advanced Axes')
             self.quad.to_excel(writer, index=False, sheet_name='Section Cuts 3 - Quadrilaterals')
