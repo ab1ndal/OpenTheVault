@@ -199,11 +199,15 @@ class CreateCut:
             d = self.planeShiftValue
         dx, dy = np.subtract(gridEnd, gridStart)
         length = np.hypot(dx, dy)
+        direction = np.array([dx, dy])/length
 
         if length == 0:
             raise ValueError('The length of the grid is 0')
         
         normal = d*np.array([-dy, dx])/length
+        extension = (abs(d)+2)*direction
+        gridStart = np.subtract(gridStart, extension).tolist()
+        gridEnd = np.add(gridEnd, extension).tolist()
         gridStart = np.add(gridStart, normal).tolist()
         gridEnd = np.add(gridEnd, normal).tolist()
 
@@ -211,6 +215,7 @@ class CreateCut:
         self.addQuadCoord('Z', cutName, z+delta, gridEnd)
         self.addQuadCoord('Z', cutName, z-delta, gridEnd)
         self.addQuadCoord('Z', cutName, z-delta, gridStart)
+        return gridStart, gridEnd
 
     def define4PtCut(self, direction, cutName, constCoord, coordList):
         self.addQuadCoord(direction, cutName, constCoord, coordList[0:2])
@@ -252,14 +257,18 @@ class CreateCut:
                 self.define2PtCut(self.cutDirection, cutNameInList, c, self.diagCoord)
             else:
                 cutNameInList = f'{self.cutName}'
-                self.defineCustomQuad(cutName=cutNameInList, 
-                                      gridStart = self.edgeCoord[0:2], 
-                                      gridEnd = self.edgeCoord[2:4], 
-                                      z = self.cutH, 
-                                      delta = self.cutDelta)
+                cutStartCoord, cutEndCoord = self.defineCustomQuad(cutName=cutNameInList, 
+                                                gridStart = self.edgeCoord[0:2], 
+                                                gridEnd = self.edgeCoord[2:4], 
+                                                z = self.cutH, 
+                                                delta = self.cutDelta)
             self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 'Yes',0,0,0,0,0,0,'', '', 'Positive']
             if self.advAxisExists:
                 self.advAxis.loc[len(self.advAxis)] = [cutNameInList, ''.join(self.localPlane.split('-')), 'Coord Dir', 'GLOBAL', 'Z', 'None', 'None', 'Two Joints', 'GLOBAL', 'X', 'Y', self.vec1, self.vec2, 0, 0, 1, 1, 0, 0]
+        
+        # Return Cut Start and End Coordinates
+        return cutStartCoord, cutEndCoord
+
     
     def printExcel(self, fileLoc=''):
         with pd.ExcelWriter(fileLoc + f'\\{self.fileName}') as writer:
