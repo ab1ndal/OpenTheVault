@@ -15,6 +15,8 @@ class CreateCut:
             self.rmSpecialCoord = kwargs.get('rmSpecialCoord')
         else:
             self.rmSpecialCoord = []
+
+        self.elementSide = 'Positive'
         self.cutName = cutName
         self.diagCoord = diagCoord
         self.cutDirection = cutDirection
@@ -47,6 +49,18 @@ class CreateCut:
             self.fileName = kwargs.get('fileName')
         else:
             self.fileName = input('Enter the name of the file: ')
+
+    def inputExtensionValue(self, **kwargs):
+        if 'extensionValue' in kwargs.keys():
+            self.extension_value = kwargs.get('extensionValue')
+        else:
+            self.extension_value = float(input('Enter the extension value: '))
+    
+    def inputElementSide(self, **kwargs):
+        if 'elementSide' in kwargs.keys():
+            self.elementSide = str(kwargs.get('elementSide'))
+        else:
+            self.elementSide = input('Enter the element side: ')
     
     def inputDiagCoord(self, **kwargs):
         if kwargs.get('diagCoord'):
@@ -137,7 +151,7 @@ class CreateCut:
     def inputLocalPlane(self, **kwargs):
         if self.advAxisExists:
             if kwargs.get('localPlane'):
-                self.localPlane = kwargs.get('localPlane')
+                self.localPlane = str(kwargs.get('localPlane'))
             else:
                 self.localPlane = input('Enter the local plane: ')
         
@@ -205,7 +219,7 @@ class CreateCut:
             raise ValueError('The length of the grid is 0')
         
         normal = d*np.array([-dy, dx])/length
-        extension = (abs(d)+2)*direction
+        extension = (abs(d)+self.extension_value)*direction
         gridStart = np.subtract(gridStart, extension).tolist()
         gridEnd = np.add(gridEnd, extension).tolist()
         gridStart = np.add(gridStart, normal).tolist()
@@ -262,7 +276,7 @@ class CreateCut:
                                                 gridEnd = self.edgeCoord[2:4], 
                                                 z = self.cutH, 
                                                 delta = self.cutDelta)
-            self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 'Yes',0,0,0,0,0,0,'', '', 'Positive']
+            self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 'Yes',0,0,0,0,0,0,'', '', self.elementSide]
             if self.advAxisExists:
                 self.advAxis.loc[len(self.advAxis)] = [cutNameInList, ''.join(self.localPlane.split('-')), 'Coord Dir', 'GLOBAL', 'Z', 'None', 'None', 'Two Joints', 'GLOBAL', 'X', 'Y', self.vec1, self.vec2, 0, 0, 1, 1, 0, 0]
         
