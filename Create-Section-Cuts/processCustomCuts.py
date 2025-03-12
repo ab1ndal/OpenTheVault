@@ -31,12 +31,12 @@ jointCoord = read_file(file_path=fileLocation, sheet_name='JointCoordinates', co
 areasCoord = read_file(file_path=fileLocation, sheet_name='Slabs', colNames=['Area', 'NumJoints', 'Joint1', 'Joint2', 'Joint3', 'Joint4', 'CentroidZ'])
 frameCoord = read_file(file_path=fileLocation, sheet_name='Beams', colNames=['Frame', 'JointI', 'JointJ', 'CentroidZ'])
 
-#print(areasCoord)
+print(areasCoord)
 #print(frameCoord)
 
 # Round the values to 2 decimal places
-areasCoord['CentroidZ'] = areasCoord['CentroidZ'].round(3)
-frameCoord['CentroidZ'] = frameCoord['CentroidZ'].round(3)
+areasCoord['CentroidZ'] = areasCoord['CentroidZ'].astype(float).round(3)
+frameCoord['CentroidZ'] = frameCoord['CentroidZ'].astype(float).round(3)
 
 query = 'Select areasCoord.*, p1.GlobalX as x1, p1.GlobalY as y1, p2.GlobalX as x2, p2.GlobalY as y2, p3.GlobalX as x3, p3.GlobalY as y3, p4.GlobalX as x4, p4.GlobalY as y4 ' \
         'from areasCoord '\
@@ -63,10 +63,14 @@ def draw_slab(ax, slabCoord, **kwargs):
     min_value = floorelev[floorelev['FloorLabel'] == floor_num]['MinElev'].values[0]
     max_value = floorelev[floorelev['FloorLabel'] == floor_num]['MaxElev'].values[0] 
 
+    print(f'Floor {floor_num} min elevation: {min_value}, max elevation: {max_value}')
+    slabCoord['CentroidZ'] = slabCoord['CentroidZ'].astype(float)
+
     # round to nearest 2 m
     #slab_height = round(slab_height/2)*2
 
     slab_at_specified_height = slabCoord[(slabCoord['CentroidZ'] >= min_value) & (slabCoord['CentroidZ'] <= max_value)].reset_index()
+    print(slab_at_specified_height)
 
     unique_heights = sorted(slab_at_specified_height['CentroidZ'].unique())
     colors = distinctipy.get_colors(len(unique_heights), exclude_colors = [(0, 1, 0), (1, 1, 1)])
@@ -198,7 +202,7 @@ from reportlab.lib.pagesizes import letter
 import os
 
 # Define output PDF path
-output_pdf_path = outFileLoc + "combined_customCuts_new2.pdf"
+output_pdf_path = outFileLoc + "combined_customCuts_new3.pdf"
 
 # Create a PDF
 c = canvas.Canvas(output_pdf_path, pagesize=letter)
