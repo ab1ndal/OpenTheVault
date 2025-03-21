@@ -6,11 +6,11 @@ from matplotlib.patches import Polygon
 from pandasql import sqldf
 import distinctipy
 
-fileLocation = r".\\customCutLocations.xlsx"
+fileLocation = r".\\customCutLocations_205.xlsx"
 sheetName = '205'
 outFileLoc = r'.\\'
-outFileName = 'customCutDefn.xlsx'
-localPlane = '32'
+outFileName = 'customCutDefn_205_Final.xlsx'
+localPlane = '12'
 
 # Add functionality to read local plane and the cut read direction
 
@@ -169,6 +169,7 @@ for floor in df['Floor'].unique():
         cut.inputCutDistance(cutDelta=row['Z_Length']/2)
         cut.inputGroupName(groupName=row['Group'])
         cut.inputExtensionValue(extensionValue=row['Extend_Cut_Value'])
+        cut.inputCentroidCoord(defaultLoc=row['defaultLocation'], globalX=row['GlobalX'], globalY=row['GlobalY'], globalZ=row['GlobalZ'])
         cutStart, cutEnd = cut.defineCut()
         # Plot the cut
         ax.plot([cutStart[0], cutEnd[0]], [cutStart[1], cutEnd[1]], linestyle = 'solid', color = 'red', linewidth = 0.5)
@@ -182,8 +183,12 @@ for floor in df['Floor'].unique():
             va = 'bottom'
         else:
             va = 'top'
+        if row['elementSide'] == 'Negative':
+            color = 'red'
+        else:
+            color = 'blue'
         # Place the text
-        ax.annotate(row['Name'], (textX, textY),rotation=textRotation, va=va, ha='left', color='blue', fontsize=3)
+        ax.annotate(row['Name'], (textX, textY),rotation=textRotation, va=va, ha='left', color=color, fontsize=2)
 
     # dont show the axes
     plt.axis('off')
@@ -202,7 +207,7 @@ from reportlab.lib.pagesizes import letter
 import os
 
 # Define output PDF path
-output_pdf_path = outFileLoc + "combined_customCuts_new3.pdf"
+output_pdf_path = outFileLoc + "combined_customCuts_205.pdf"
 
 # Create a PDF
 c = canvas.Canvas(output_pdf_path, pagesize=letter)
