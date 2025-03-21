@@ -2,10 +2,10 @@ import pyodbc
 import pandas as pd
 
 # Connect to the database
-folderLoc = r"C:\\Users\\abindal\\OneDrive - Nabih Youssef & Associates\\Documents - The Vault\\Calculations\\2025 -  Stage 3C\\205 - Model Results\\20250310_205\\Diaphragm Cuts TH\\"
-fileName = "20250310_205_UB_DiaCut_TH.mdb"
+folderLoc = r"C:\\Users\\abindal\\OneDrive - Nabih Youssef & Associates\\Documents\\00_Projects\\06_The Vault\\2025 Models\\20250318_205\\"
+fileName = "20250318_205_uB_DiaCut_TH.mdb"
 THfile = folderLoc + fileName
-modelName = "205_UB"
+modelName = "20250318_205_uB"
 conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + THfile)
 cursor = conn.cursor()
 
@@ -59,13 +59,14 @@ for base_cut in east_west_cuts:
 
     # Find max absolute difference for each OutputCase
     max_diff = merged_df.groupby('OutputCase')[['AbsDiff_F1', 'AbsDiff_F2', 'AbsDiff_F3', 'AbsDiff_M1', 'AbsDiff_M2', 'AbsDiff_M3']].max().reset_index()
+    mce_cases = max_diff[max_diff['OutputCase'].str.contains("MCE", na=False)]
 
     # take an average of all the gorund motions
     # Compute the average of the absolute differences
-    average_row = max_diff[['AbsDiff_F1', 'AbsDiff_F2', 'AbsDiff_F3', 'AbsDiff_M1', 'AbsDiff_M2', 'AbsDiff_M3']].mean().round(0).to_frame().T
+    average_row = mce_cases[['AbsDiff_F1', 'AbsDiff_F2', 'AbsDiff_F3', 'AbsDiff_M1', 'AbsDiff_M2', 'AbsDiff_M3']].mean().round(0).to_frame().T
 
     # Assign "average" as the OutputCase
-    average_row['OutputCase'] = 'Average'
+    average_row['OutputCase'] = 'Average MCE'
 
     # Append the average row to max_diff
     max_diff = pd.concat([max_diff, average_row], ignore_index=True)
@@ -90,13 +91,17 @@ for base_cut in a_b_cuts:
 
     # Find max absolute difference for each OutputCase
     max_diff = merged_df.groupby('OutputCase')[['AbsDiff_F1', 'AbsDiff_F2', 'AbsDiff_F3', 'AbsDiff_M1', 'AbsDiff_M2', 'AbsDiff_M3']].max().reset_index()
+    mce_cases = max_diff[max_diff['OutputCase'].str.contains("MCE", na=False)]
 
     # take an average of all the gorund motions
     # Compute the average of the absolute differences
-    average_row = max_diff[['AbsDiff_F1', 'AbsDiff_F2', 'AbsDiff_F3', 'AbsDiff_M1', 'AbsDiff_M2', 'AbsDiff_M3']].mean().round(0).to_frame().T
+    # Compute average only for output cases containing "MCE"
 
+    average_row = mce_cases[['AbsDiff_F1', 'AbsDiff_F2', 'AbsDiff_F3', 'AbsDiff_M1', 'AbsDiff_M2', 'AbsDiff_M3']].mean().round(0).to_frame().T
+
+    
     # Assign "average" as the OutputCase
-    average_row['OutputCase'] = 'Average'
+    average_row['OutputCase'] = 'Average MCE'
 
     # Append the average row to max_diff
     max_diff = pd.concat([max_diff, average_row], ignore_index=True)
