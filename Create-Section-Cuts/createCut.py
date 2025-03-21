@@ -37,6 +37,10 @@ class CreateCut:
         self.general.loc[len(self.general)] = ['','','','','',self.unit, self.unit, self.unit, 'Degrees', 'Degrees', 'Degrees', '', 'Degrees', '']
         self.advAxis.loc[len(self.advAxis)] = 19*['']
         self.fileName = 'cuts.xlsx'
+        self.defaultLoc = 'Yes'
+        self.globalX = 0
+        self.globalY = 0
+        self.globalZ = 0
     
     def inputCutName(self, **kwargs):
         if kwargs.get('cutName'):
@@ -179,6 +183,16 @@ class CreateCut:
             self.quadCoord.append(kwargs.get(param))
         if not self.quadCoord:
             self.quadCoord = [float(x) for x in input('Enter the coordinates of the 4 points: ').split()]
+    
+    def inputCentroidCoord(self, **kwargs):
+        if 'globalX' in kwargs.keys():
+            self.globalX = kwargs.get('globalX')
+        if 'globalY' in kwargs.keys():
+            self.globalY = kwargs.get('globalY')
+        if 'globalZ' in kwargs.keys():
+            self.globalZ = kwargs.get('globalZ')
+        if 'defaultLoc' in kwargs.keys():
+            self.defaultLoc = kwargs.get('defaultLoc')
 
     def inputSpecialCoord(self, **kwargs):
         if 'addSpecialCoord' in kwargs.keys():
@@ -276,7 +290,9 @@ class CreateCut:
                                                 gridEnd = self.edgeCoord[2:4], 
                                                 z = self.cutH, 
                                                 delta = self.cutDelta)
-            self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 'Yes',0,0,0,0,0,0,'', '', self.elementSide]
+            self.general.loc[len(self.general)] = [cutNameInList, 'Quad', self.groupName, 'Analysis', 
+                                                   self.defaultLoc, self.globalX, self.globalY, self.globalZ, 
+                                                   0, 0, 0, '', '', self.elementSide]
             if self.advAxisExists:
                 self.advAxis.loc[len(self.advAxis)] = [cutNameInList, ''.join(self.localPlane.split('-')), 'Coord Dir', 'GLOBAL', 'Z', 'None', 'None', 'Two Joints', 'GLOBAL', 'X', 'Y', self.vec1, self.vec2, 0, 0, 1, 1, 0, 0]
         
