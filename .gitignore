@@ -12,6 +12,9 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 *.png
+output.pdf
+convertPDF.py
+Create-Section-Cuts/customCutDefn_205_Final.xlsx
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
