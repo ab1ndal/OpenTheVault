@@ -1,3 +1,5 @@
 pandas
 numpy
 PyQT5
+pyodbc
+openpyxl

@@ -89,6 +89,8 @@ def plot_polygon_with_intersections(polygon, z_levels, reference_point, wall_nam
     #ax.add_collection3d(Poly3DCollection(verts, alpha=0.2, facecolor='cyan'))
 
     centroid_list = []
+    length_list = []
+
     # Process each Z-level intersection
     for z_cut in z_levels:
         extreme_points = find_extreme_intersections(polygon, z_cut, reference_point)
@@ -99,9 +101,14 @@ def plot_polygon_with_intersections(polygon, z_levels, reference_point, wall_nam
             #ax.scatter(x_vals, y_vals, z_vals, color='red', s=50)  # Mark extreme points
             #mark the centroid
             centroid = np.mean(extreme_points, axis=0)
+            # Using extreme points calculate length between extreme points
+            length_cut = ((extreme_points[0][0] - extreme_points[1][0])**2 + 
+                          (extreme_points[0][1] - extreme_points[1][1])**2)**0.5
+            
             #ax.scatter(centroid[0], centroid[1], centroid[2], color='black', s=50)
             ax.scatter(((centroid[0] - reference_point[0])**2+(centroid[1] - reference_point[1])**2)**0.5, (centroid[2] - reference_point[2]), color='black', s=20)
             centroid_list.append(centroid)
+            length_list.append(length_cut)
         else:
             print("No extreme points found at Z =", z_cut)
             centroid_list.append((0,0,0))
@@ -119,7 +126,7 @@ def plot_polygon_with_intersections(polygon, z_levels, reference_point, wall_nam
     ax.set_aspect('equal', 'box')
     plt.tight_layout()
     plt.savefig(f"Wall-{wall_name}.png", dpi=300)
-    return centroid_list
+    return centroid_list, length_list
 
 # Example closed polygon with an opening
 
@@ -140,11 +147,12 @@ for wall in wallNames:
     z_levels = list(cuts['GlobalZ'])
 
     # Plot polygon with extreme intersection points
-    centroid_list = plot_polygon_with_intersections(polygon, z_levels, reference_point,wall)
+    centroid_list, length_list = plot_polygon_with_intersections(polygon, z_levels, reference_point,wall)
     # Add centroid_list to Cuts
     cuts['CentroidX'] = [centroid[0] for centroid in centroid_list]
     cuts['CentroidY'] = [centroid[1] for centroid in centroid_list]
     cuts['CentroidZ'] = [centroid[2] for centroid in centroid_list]
+    cuts['Length'] = length_list
     #Create a new sheet in the excel file
     with pd.ExcelWriter(cut_Locs, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
         cuts.to_excel(writer, sheet_name=f'{wall}_Centroids', index=False)
