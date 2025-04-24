@@ -20,6 +20,7 @@ class CreateCut:
         self.cutName = cutName
         self.diagCoord = diagCoord
         self.cutDirection = cutDirection
+        self.renameCut = True
         self.cutStep = cutStep
         self.startCoord = startCoord
         self.endCoord = endCoord
@@ -32,7 +33,7 @@ class CreateCut:
         self.localPlane = localPlane
         self.quad = pd.DataFrame(columns=['SectionCut', 'X', 'Y', 'Z'])
         self.general = pd.DataFrame(columns=['CutName', 'DefinedBy', 'Group', 'ResultType', 'DefaultLoc', 'GlobalX','GlobalY', 'GlobalZ', 'AngleA', 'AngleB', 'AngleC', 'DesignType', 'DesignAngle', 'ElemSide'])
-        self.advAxis = pd.DataFrame(columns=['SectionCut', 'LocalPlane', 'AxOption1', 'AxCoordSys', 'AxCoordDir', 'AxVecJt1', 'AxVecJt2', 'PlOption1', 'PlCoordSys', 'CoordDir1', 'CoordDir2', 'PlVecJt2', 'PlVecJt2', 'AxVecX', 'AxVecY', 'AxVecZ', 'PlVecX', 'PlVecY', 'PlVecZ'])
+        self.advAxis = pd.DataFrame(columns=['SectionCut', 'LocalPlane', 'AxOption1', 'AxCoordSys', 'AxCoordDir', 'AxVecJt1', 'AxVecJt2', 'PlOption1', 'PlCoordSys', 'CoordDir1', 'CoordDir2', 'PlVecJt1', 'PlVecJt2', 'AxVecX', 'AxVecY', 'AxVecZ', 'PlVecX', 'PlVecY', 'PlVecZ'])
         self.quad.loc[len(self.quad)] = ['',self.unit, self.unit, self.unit]
         self.general.loc[len(self.general)] = ['','','','','',self.unit, self.unit, self.unit, 'Degrees', 'Degrees', 'Degrees', '', 'Degrees', '']
         self.advAxis.loc[len(self.advAxis)] = 19*['']
@@ -250,14 +251,17 @@ class CreateCut:
         self.addQuadCoord(direction, cutName, constCoord, coordList[2:4])
         self.addQuadCoord(direction, cutName, constCoord, coordList[4:6])
         self.addQuadCoord(direction, cutName, constCoord, coordList[6:8])
+        return None, None
     
     def define2PtCut(self, direction, cutName, constCoord, coordList):
         self.addQuadCoord(direction, cutName, constCoord, [coordList[0], coordList[1]])
         self.addQuadCoord(direction, cutName, constCoord, [coordList[0], coordList[3]])
         self.addQuadCoord(direction, cutName, constCoord, [coordList[2], coordList[3]])
         self.addQuadCoord(direction, cutName, constCoord, [coordList[2], coordList[1]])
-
-
+        return None, None
+    
+    def defineCustomCutName(self, renameCut):
+        self.renameCut = renameCut
 
     def defineCut(self):
         # create a list of cuts from the start to the end with the cut step include both start and end
@@ -278,11 +282,14 @@ class CreateCut:
             cutList = [self.cutH]
         
         for c in cutList:
-            cutNameInList = f'{self.cutName} - {self.cutDirection}={c}{self.unit}'
+            if self.renameCut:
+                cutNameInList = f'{self.cutName} - {self.cutDirection}={c}{self.unit}'
+            else:
+                cutNameInList = f'{self.cutName}'
             if self.is4Pt:
-                self.define4PtCut(self.cutDirection, cutNameInList, c, self.quadCoord)
+                cutStartCoord, cutEndCoord = self.define4PtCut(self.cutDirection, cutNameInList, c, self.quadCoord)
             elif not self.isCustom:
-                self.define2PtCut(self.cutDirection, cutNameInList, c, self.diagCoord)
+                cutStartCoord, cutEndCoord = self.define2PtCut(self.cutDirection, cutNameInList, c, self.diagCoord)
             else:
                 cutNameInList = f'{self.cutName}'
                 cutStartCoord, cutEndCoord = self.defineCustomQuad(cutName=cutNameInList, 
